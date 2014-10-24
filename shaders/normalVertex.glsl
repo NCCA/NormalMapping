@@ -1,4 +1,4 @@
-#version 400
+#version 330 core
 #pragma optionNV(unroll all)
 precision highp float;
 // first attribute the vertex values from our VAO

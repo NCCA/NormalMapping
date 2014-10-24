@@ -1,4 +1,4 @@
-#version 400
+#version 330 core
 #pragma optionNV(unroll all)
 // this is set for the base colour texture (unit 0)
 uniform sampler2D tex;

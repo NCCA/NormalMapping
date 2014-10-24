@@ -1,4 +1,4 @@
-#version 400
+#version 330 core
 #pragma optionNV(unroll all)
 /// @brief our output fragment colour
 out vec4 fragColour;

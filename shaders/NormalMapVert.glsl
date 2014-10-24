@@ -1,4 +1,4 @@
-#version 400
+#version 330 core
 #pragma optionNV(unroll all)
 // first attribute the vertex values from our VAO
 layout (location =0) in vec3 inVert;
