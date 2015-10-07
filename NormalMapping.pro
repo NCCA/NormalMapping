@@ -4,23 +4,23 @@ TARGET=NormalMapping
 OBJECTS_DIR=obj
 # core Qt Libs to use add more here if needed.
 QT+=gui opengl core
+
 # as I want to support 4.8 and 5 this will set a flag for some of the mac stuff
 # mainly in the types.h file for the setMacVisual which is native in Qt5
 isEqual(QT_MAJOR_VERSION, 5) {
 	cache()
 	DEFINES +=QT5BUILD
 }
+
 # where to put moc auto generated files
 MOC_DIR=moc
 # on a mac we don't create a .app bundle file ( for ease of multiplatform use)
 CONFIG-=app_bundle
 # Auto include all .cpp files in the project src directory (can specifiy individually if required)
-SOURCES+= $$PWD/src/NGLScene.cpp    \
-          $$PWD/src/OpenGLWindow.cpp \
-          $$PWD/src/main.cpp
+SOURCES+= $$PWD/src/NGLScene.cpp \
+					$$PWD/src/main.cpp
 # same for the .h files
-HEADERS+= $$PWD/include/NGLScene.h  \
-          $$PWD/include/OpenGLWindow.h
+HEADERS+= $$PWD/include/NGLScene.h
 # and add the include dir into the search path for Qt and make
 INCLUDEPATH +=./include
 # where our exe is going to live (root of project)
@@ -36,9 +36,13 @@ CONFIG += console
 	copydata.commands = echo "creating destination dirs" ;
 	# now make a dir
 	copydata.commands += mkdir -p $$OUT_PWD/shaders ;
+	copydata.commands += mkdir -p $$OUT_PWD/textures ;
+	copydata.commands += mkdir -p $$OUT_PWD/models ;
 	copydata.commands += echo "copying files" ;
 	# then copy the files
 	copydata.commands += $(COPY_DIR) $$PWD/shaders/* $$OUT_PWD/shaders/ ;
+	copydata.commands += $(COPY_DIR) $$PWD/textures/* $$OUT_PWD/textures/ ;
+	copydata.commands += $(COPY_DIR) $$PWD/models/* $$OUT_PWD/models/ ;
 	# now make sure the first target is built before copy
 	first.depends = $(first) copydata
 	export(first.depends)
