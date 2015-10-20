@@ -82,8 +82,8 @@ void NGLScene::initializeGL()
 
   shader->createShaderProgram("TextureShader");
 
-  shader->attachShader("SimpleVertex",ngl::VERTEX);
-  shader->attachShader("SimpleFragment",ngl::FRAGMENT);
+  shader->attachShader("SimpleVertex",ngl::ShaderType::VERTEX);
+  shader->attachShader("SimpleFragment",ngl::ShaderType::FRAGMENT);
   shader->loadShaderSource("SimpleVertex","shaders/NormalMapVert.glsl");
   shader->loadShaderSource("SimpleFragment","shaders/NormalMapFrag.glsl");
 
@@ -149,8 +149,8 @@ void NGLScene::initializeGL()
 
   shader->createShaderProgram("normalShader");
 
-  shader->attachShader("normalVertex",ngl::VERTEX);
-  shader->attachShader("normalFragment",ngl::FRAGMENT);
+  shader->attachShader("normalVertex",ngl::ShaderType::VERTEX);
+  shader->attachShader("normalFragment",ngl::ShaderType::FRAGMENT);
   shader->loadShaderSource("normalVertex","shaders/normalVertex.glsl");
   shader->loadShaderSource("normalFragment","shaders/normalFragment.glsl");
 
