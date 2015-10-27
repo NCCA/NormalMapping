@@ -132,16 +132,16 @@ void NGLScene::initializeGL()
   iv.transpose();
 
   /// now setup a basic 3 point lighting system
-  m_key= new ngl::Light(ngl::Vec3(3,2,2),ngl::Colour(1,1,1,1),ngl::POINTLIGHT);
+  m_key= new ngl::Light(ngl::Vec3(3,2,2),ngl::Colour(1,1,1,1),ngl::LightModes::POINTLIGHT);
   m_key->setTransform(iv);
   m_key->enable();
   m_key->loadToShader("light[0]");
-  m_fill = new ngl::Light(ngl::Vec3(-3,1.5,2),ngl::Colour(1,1,1,1),ngl::POINTLIGHT);
+  m_fill = new ngl::Light(ngl::Vec3(-3,1.5,2),ngl::Colour(1,1,1,1),ngl::LightModes::POINTLIGHT);
   m_fill->setTransform(iv);
   m_fill->enable();
   m_fill->loadToShader("light[1]");
 
-  m_back= new ngl::Light(ngl::Vec3(0,1,-2),ngl::Colour(1,1,1,1),ngl::POINTLIGHT);
+  m_back= new ngl::Light(ngl::Vec3(0,1,-2),ngl::Colour(1,1,1,1),ngl::LightModes::POINTLIGHT);
   m_back->setTransform(iv);
   m_back->enable();
   m_back->loadToShader("light[2]");
@@ -159,7 +159,7 @@ void NGLScene::initializeGL()
   shader->attachShaderToProgram("normalShader","normalVertex");
   shader->attachShaderToProgram("normalShader","normalFragment");
 
-  shader->attachShader("normalGeo",ngl::GEOMETRY);
+  shader->attachShader("normalGeo",ngl::ShaderType::GEOMETRY);
   shader->loadShaderSource("normalGeo","shaders/normalGeo.glsl");
   shader->compileShader("normalGeo");
   shader->attachShaderToProgram("normalShader","normalGeo");
