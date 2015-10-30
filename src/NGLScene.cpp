@@ -30,26 +30,20 @@ NGLScene::NGLScene()
   m_spinYFace=0;
   setTitle("Normal mapping Demo");
   m_showNormals=false;
-
 }
 
 
 NGLScene::~NGLScene()
 {
   std::cout<<"Shutting down NGL, removing VAO's and Shaders\n";
-  delete m_key;
-  delete m_fill;
-  delete m_back;
 }
 
-void NGLScene::resizeGL(int _w, int _h)
+void NGLScene::resizeGL(QResizeEvent *_event)
 {
-  // set the viewport for openGL we need to take into account retina display
-  // etc by using the pixel ratio as a multiplyer
-  glViewport(0,0,_w*devicePixelRatio(),_h*devicePixelRatio());
+  m_width=_event->size().width()*devicePixelRatio();
+  m_height=_event->size().height()*devicePixelRatio();
   // now set the camera size values as the screen size has changed
-  m_cam->setShape(45.0f,(float)width()/height(),0.05f,350.0f);
-  update();
+  m_cam.setShape(45.0f,(float)width()/height(),0.05f,350.0f);
 }
 
 
@@ -71,10 +65,11 @@ void NGLScene::initializeGL()
   ngl::Vec3 to(0,0,0);
   ngl::Vec3 up(0,1,0);
   // create our camera
-  m_cam= new ngl::Camera(from,to,up);
+  m_cam.set(from,to,up);
   // set the shape using FOV 45 Aspect Ratio based on Width and Height
   // The final two are near and far clipping planes of 0.5 and 10
-  m_cam->setShape(25,(float)720.0/576.0,0.001,350);
+  m_cam.setShape(45.0f,(float)width()/height(),0.05f,350.0f);
+
   // now to load the shader and set the values
   // grab an instance of shader manager
   ngl::ShaderLib *shader=ngl::ShaderLib::instance();
@@ -128,20 +123,20 @@ void NGLScene::initializeGL()
   glEnable(GL_MULTISAMPLE);
 
   ngl::Mat4 iv;
-  iv=m_cam->getViewMatrix();
+  iv=m_cam.getViewMatrix();
   iv.transpose();
 
   /// now setup a basic 3 point lighting system
-  m_key= new ngl::Light(ngl::Vec3(3,2,2),ngl::Colour(1,1,1,1),ngl::LightModes::POINTLIGHT);
+  m_key.reset(new ngl::Light(ngl::Vec3(3,2,2),ngl::Colour(1,1,1,1),ngl::LightModes::POINTLIGHT));
   m_key->setTransform(iv);
   m_key->enable();
   m_key->loadToShader("light[0]");
-  m_fill = new ngl::Light(ngl::Vec3(-3,1.5,2),ngl::Colour(1,1,1,1),ngl::LightModes::POINTLIGHT);
+  m_fill.reset(  new ngl::Light(ngl::Vec3(-3,1.5,2),ngl::Colour(1,1,1,1),ngl::LightModes::POINTLIGHT));
   m_fill->setTransform(iv);
   m_fill->enable();
   m_fill->loadToShader("light[1]");
 
-  m_back= new ngl::Light(ngl::Vec3(0,1,-2),ngl::Colour(1,1,1,1),ngl::LightModes::POINTLIGHT);
+  m_back.reset( new ngl::Light(ngl::Vec3(0,1,-2),ngl::Colour(1,1,1,1),ngl::LightModes::POINTLIGHT));
   m_back->setTransform(iv);
   m_back->enable();
   m_back->loadToShader("light[2]");
@@ -169,9 +164,6 @@ void NGLScene::initializeGL()
   shader->use("normalShader");
   // now pass the modelView and projection values to the shader
   shader->setShaderParam1f("normalSize",0.01);
-
-  // as re-size is not explicitly called we need to do this.
-  glViewport(0,0,width(),height());
 }
 
 
@@ -219,28 +211,27 @@ void NGLScene::loadModel()
 	// now we are going to process and pack the mesh into an ngl::VertexArrayObject
 	std::vector <vertData> vboMesh;
 	vertData d;
-	unsigned int nFaces=faces.size();
-	unsigned int nNorm=normals.size();
-	unsigned int nTex=tex.size();
+	auto nNorm=normals.size();
+	auto nTex=tex.size();
 	// loop for each of the faces
-	for(unsigned int i=0;i<nFaces;++i)
+	for(auto f : faces)
 	{
 		// now for each triangle in the face (remember we ensured tri above)
 		for(int j=0;j<3;++j)
 		{
 			// pack in the vertex data first
-			d.x=verts[faces[i].m_vert[j]].m_x;
-			d.y=verts[faces[i].m_vert[j]].m_y;
-			d.z=verts[faces[i].m_vert[j]].m_z;
+			d.x=verts[f.m_vert[j]].m_x;
+			d.y=verts[f.m_vert[j]].m_y;
+			d.z=verts[f.m_vert[j]].m_z;
 			// now if we have norms of tex (possibly could not) pack them as well
 			if(nNorm >0 && nTex > 0)
 			{
-				d.nx=normals[faces[i].m_norm[j]].m_x;
-				d.ny=normals[faces[i].m_norm[j]].m_y;
-				d.nz=normals[faces[i].m_norm[j]].m_z;
+				d.nx=normals[f.m_norm[j]].m_x;
+				d.ny=normals[f.m_norm[j]].m_y;
+				d.nz=normals[f.m_norm[j]].m_z;
 
-				d.u=tex[faces[i].m_tex[j]].m_x;
-				d.v=tex[faces[i].m_tex[j]].m_y;
+				d.u=tex[f.m_tex[j]].m_x;
+				d.v=tex[f.m_tex[j]].m_y;
 
       }
       // now if neither are present (only verts like Zbrush models)
@@ -255,9 +246,9 @@ void NGLScene::loadModel()
       // here we've got norms but not tex
       else if(nNorm >0 && nTex==0)
       {
-        d.nx=normals[faces[i].m_norm[j]].m_x;
-        d.ny=normals[faces[i].m_norm[j]].m_y;
-        d.nz=normals[faces[i].m_norm[j]].m_z;
+        d.nx=normals[f.m_norm[j]].m_x;
+        d.ny=normals[f.m_norm[j]].m_y;
+        d.nz=normals[f.m_norm[j]].m_z;
         d.u=0;
         d.v=0;
 
@@ -268,14 +259,14 @@ void NGLScene::loadModel()
         d.nx=0;
         d.ny=0;
         d.nz=0;
-        d.u=tex[faces[i].m_tex[j]].m_x;
-        d.v=tex[faces[i].m_tex[j]].m_y;
+        d.u=tex[f.m_tex[j]].m_x;
+        d.v=tex[f.m_tex[j]].m_y;
       }
     // now we calculate the tangent / bi-normal (tangent) based on the article here
     // http://www.terathon.com/code/tangent.html
 
-    ngl::Vec3 c1 = normals[faces[i].m_norm[j]].cross(ngl::Vec3(0.0, 0.0, 1.0));
-    ngl::Vec3 c2 = normals[faces[i].m_norm[j]].cross(ngl::Vec3(0.0, 1.0, 0.0));
+    ngl::Vec3 c1 = normals[f.m_norm[j]].cross(ngl::Vec3(0.0, 0.0, 1.0));
+    ngl::Vec3 c2 = normals[f.m_norm[j]].cross(ngl::Vec3(0.0, 1.0, 0.0));
     ngl::Vec3 tangent;
     ngl::Vec3 binormal;
     if(c1.length()>c2.length())
@@ -289,7 +280,7 @@ void NGLScene::loadModel()
     // now we normalize the tangent so we don't need to do it in the shader
     tangent.normalize();
     // now we calculate the binormal using the model normal and tangent (cross)
-    binormal = normals[faces[i].m_norm[j]].cross(tangent);
+    binormal = normals[f.m_norm[j]].cross(tangent);
     // normalize again so we don't need to in the shader
     binormal.normalize();
     d.tx=tangent.m_x;
@@ -304,7 +295,7 @@ void NGLScene::loadModel()
   }
 
 	// first we grab an instance of our VOA class as a TRIANGLE_STRIP
-	m_vaoMesh= ngl::VertexArrayObject::createVOA(GL_TRIANGLES);
+	m_vaoMesh.reset( ngl::VertexArrayObject::createVOA(GL_TRIANGLES));
 	// next we bind it so it's active for setting data
 	m_vaoMesh->bind();
 	unsigned int meshSize=vboMesh.size();
@@ -355,8 +346,8 @@ void NGLScene::loadMatricesToShader()
   ngl::Mat4 M;
 
   M=m_transform.getMatrix()*m_mouseGlobalTX;
-  MV=M*m_cam->getViewMatrix();
-  MVP=MV*m_cam->getProjectionMatrix() ;
+  MV=M*m_cam.getViewMatrix();
+  MVP=MV*m_cam.getProjectionMatrix() ;
 
   shader->setShaderParamFromMat4("MVP",MVP);
   shader->setShaderParamFromMat4("MV",MV);
@@ -371,8 +362,8 @@ void NGLScene::loadMatricesToNormalShader()
   ngl::Mat4 MV;
   ngl::Mat4 MVP;
 
-  MV=m_transform.getMatrix()*m_mouseGlobalTX*m_cam->getViewMatrix();
-  MVP=MV*m_cam->getProjectionMatrix();
+  MV=m_transform.getMatrix()*m_mouseGlobalTX*m_cam.getViewMatrix();
+  MVP=MV*m_cam.getProjectionMatrix();
   shader->setShaderParamFromMat4("MVP",MVP);
 
 }
@@ -382,6 +373,7 @@ void NGLScene::paintGL()
 {
   // clear the screen and depth buffer
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+  glViewport(0,0,m_width,m_height);
   // Rotation based on the mouse position for our global
   // transform
   ngl::Mat4 rotX;
