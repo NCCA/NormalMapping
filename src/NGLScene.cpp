@@ -76,11 +76,11 @@ void NGLScene::initializeGL()
 	(*shader)["TextureShader"]->use();
 	// set our samplers for each of the textures this will correspond to the
 	// multitexture id below
-	shader->setShaderParam1i("tex",0);
-	shader->setShaderParam1i("spec",1);
-	shader->setShaderParam1i("normalMap",2);
+	shader->setUniform("tex",0);
+	shader->setUniform("spec",1);
+	shader->setUniform("normalMap",2);
 	// specular power
-	shader->setShaderParam1f("specPower",12.0);
+  shader->setUniform("specPower",12.0f);
 
 	// build our VertexArrayObject from the mesh
 	loadModel();
@@ -147,7 +147,7 @@ void NGLScene::initializeGL()
   shader->linkProgramObject("normalShader");
   shader->use("normalShader");
   // now pass the modelView and projection values to the shader
-  shader->setShaderParam1f("normalSize",0.01);
+  shader->setUniform("normalSize",0.01f);
 }
 
 
@@ -333,8 +333,8 @@ void NGLScene::loadMatricesToShader()
   MV=M*m_cam.getViewMatrix();
   MVP=MV*m_cam.getProjectionMatrix() ;
 
-  shader->setShaderParamFromMat4("MVP",MVP);
-  shader->setShaderParamFromMat4("MV",MV);
+  shader->setUniform("MVP",MVP);
+  shader->setUniform("MV",MV);
 
 }
 
@@ -348,7 +348,7 @@ void NGLScene::loadMatricesToNormalShader()
 
   MV=m_transform.getMatrix()*m_mouseGlobalTX*m_cam.getViewMatrix();
   MVP=MV*m_cam.getProjectionMatrix();
-  shader->setShaderParamFromMat4("MVP",MVP);
+  shader->setUniform("MVP",MVP);
 
 }
 
