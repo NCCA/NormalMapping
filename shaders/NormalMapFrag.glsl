@@ -17,21 +17,15 @@ uniform float specPower;
 
 
 // @brief light structure
-struct Lights
+struct Light
 {
 	vec4 position;
 	vec4 ambient;
 	vec4 diffuse;
 	vec4 specular;
-	float spotCosCutoff;
-	float spotCosInnerCutoff;
-	float spotExponent;
-	float constantAttenuation;
-	float linearAttenuation;
-	float quadraticAttenuation;
 };
 
-uniform Lights light[3];
+uniform Light light[3];
 in vec3 lightDir;
 // out the blinn half vector
 in vec3 halfVector;

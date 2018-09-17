@@ -11,22 +11,16 @@ layout (location =3) in vec3 inTangent;
 // fith attribute the binormal values from our VAO
 layout (location =4) in vec3 inBinormal;
 
-struct Lights
+struct Light
 {
 	vec4 position;
 	vec4 ambient;
 	vec4 diffuse;
 	vec4 specular;
-	float spotCosCutoff;
-	float spotCosInnerCutoff;
-	float spotExponent;
-	float constantAttenuation;
-	float linearAttenuation;
-	float quadraticAttenuation;
 };
 
 // array of lights
-uniform Lights light[3];
+uniform Light light[3];
 // direction of the lights used for shading
 out vec3 lightDir;
 

@@ -2,9 +2,6 @@
 #include <QGuiApplication>
 
 #include "NGLScene.h"
-#include <ngl/Camera.h>
-#include <ngl/Light.h>
-#include <ngl/Material.h>
 #include <ngl/NGLInit.h>
 #include <ngl/VAOPrimitives.h>
 #include <ngl/ShaderLib.h>
@@ -26,7 +23,7 @@ NGLScene::~NGLScene()
 
 void NGLScene::resizeGL( int _w, int _h )
 {
-  m_cam.setShape( 45.0f, static_cast<float>( _w ) / _h, 0.05f, 350.0f );
+  m_project=ngl::perspective(45.0f, static_cast<float>( _w ) / _h, 0.05f, 350.0f );
   m_win.width  = static_cast<int>( _w * devicePixelRatio() );
   m_win.height = static_cast<int>( _h * devicePixelRatio() );
 }
@@ -49,14 +46,14 @@ void NGLScene::initializeGL()
   ngl::Vec3 to(0,0,0);
   ngl::Vec3 up(0,1,0);
   // create our camera
-  m_cam.set(from,to,up);
+  m_view=ngl::lookAt(from,to,up);
   // set the shape using FOV 45 Aspect Ratio based on Width and Height
   // The final two are near and far clipping planes of 0.5 and 10
-  m_cam.setShape(45.0f,(float)width()/height(),0.05f,350.0f);
+  m_project=ngl::perspective(45.0f,(float)width()/height(),0.05f,350.0f);
 
   // now to load the shader and set the values
   // grab an instance of shader manager
-  ngl::ShaderLib *shader=ngl::ShaderLib::instance();
+  auto *shader=ngl::ShaderLib::instance();
   // load a frag and vert shaders
 
   shader->createShaderProgram("TextureShader");
@@ -106,25 +103,24 @@ void NGLScene::initializeGL()
 
   glEnable(GL_MULTISAMPLE);
 
-  ngl::Mat4 iv;
-  iv=m_cam.getViewMatrix();
-  iv.transpose();
-
   /// now setup a basic 3 point lighting system
-  m_key.reset(new ngl::Light(ngl::Vec3(3,2,2),ngl::Colour(1,1,1,1),ngl::LightModes::POINTLIGHT));
-  m_key->setTransform(iv);
-  m_key->enable();
-  m_key->loadToShader("light[0]");
-  m_fill.reset(  new ngl::Light(ngl::Vec3(-3,1.5,2),ngl::Colour(1,1,1,1),ngl::LightModes::POINTLIGHT));
-  m_fill->setTransform(iv);
-  m_fill->enable();
-  m_fill->loadToShader("light[1]");
+  m_key.position=ngl::Vec4(3,2,2);
+  shader->setUniform("light[0].position",m_key.position);
+  shader->setUniform("light[0].ambient",m_key.ambient);
+  shader->setUniform("light[0].diffuse",m_key.diffuse);
+  shader->setUniform("light[0].specular",m_key.specular);
 
-  m_back.reset( new ngl::Light(ngl::Vec3(0,1,-2),ngl::Colour(1,1,1,1),ngl::LightModes::POINTLIGHT));
-  m_back->setTransform(iv);
-  m_back->enable();
-  m_back->loadToShader("light[2]");
+  m_fill.position=ngl::Vec4(-3.0f,1.5f,2.0f);
+  shader->setUniform("light[1].position",m_fill.position);
+  shader->setUniform("light[1].ambient",m_fill.ambient);
+  shader->setUniform("light[1].diffuse",m_fill.diffuse);
+  shader->setUniform("light[1].specular",m_fill.specular);
 
+  m_back.position=ngl::Vec4(0.0f,1.0f,-2.0f);
+  shader->setUniform("light[2].position",m_back.position);
+  shader->setUniform("light[2].ambient",m_back.ambient);
+  shader->setUniform("light[2].diffuse",m_back.diffuse);
+  shader->setUniform("light[2].specular",m_back.specular);
 
   shader->createShaderProgram("normalShader");
 
@@ -188,7 +184,7 @@ void NGLScene::loadModel()
   // get the obj data so we can process it locally
   std::vector <ngl::Vec3> verts=mesh.getVertexList();
   std::vector <ngl::Face> faces=mesh.getFaceList();
-  std::vector <ngl::Vec3> tex=mesh.getTextureCordList();
+  std::vector <ngl::Vec3> tex=mesh.getUVList();
   std::vector <ngl::Vec3> normals=mesh.getNormalList();
 
 	std::cout<<"got mesh data\n";
@@ -214,8 +210,8 @@ void NGLScene::loadModel()
 				d.ny=normals[f.m_norm[j]].m_y;
 				d.nz=normals[f.m_norm[j]].m_z;
 
-				d.u=tex[f.m_tex[j]].m_x;
-				d.v=tex[f.m_tex[j]].m_y;
+        d.u=tex[f.m_uv[j]].m_x;
+        d.v=tex[f.m_uv[j]].m_y;
 
       }
       // now if neither are present (only verts like Zbrush models)
@@ -243,8 +239,8 @@ void NGLScene::loadModel()
         d.nx=0;
         d.ny=0;
         d.nz=0;
-        d.u=tex[f.m_tex[j]].m_x;
-        d.v=tex[f.m_tex[j]].m_y;
+        d.u=tex[f.m_uv[j]].m_x;
+        d.v=tex[f.m_uv[j]].m_y;
       }
     // now we calculate the tangent / bi-normal (tangent) based on the article here
     // http://www.terathon.com/code/tangent.html
@@ -279,7 +275,7 @@ void NGLScene::loadModel()
   }
 
 	// first we grab an instance of our VOA class as a TRIANGLE_STRIP
-  m_vaoMesh.reset( ngl::VAOFactory::createVAO("simpleVAO",GL_TRIANGLES));
+  m_vaoMesh= ngl::VAOFactory::createVAO(ngl::simpleVAO,GL_TRIANGLES);
 	// next we bind it so it's active for setting data
 	m_vaoMesh->bind();
   auto meshSize=vboMesh.size();
@@ -330,8 +326,8 @@ void NGLScene::loadMatricesToShader()
   ngl::Mat4 M;
 
   M=m_mouseGlobalTX*m_transform.getMatrix();
-  MV=m_cam.getViewMatrix()*M;
-  MVP=m_cam.getProjectionMatrix()*MV ;
+  MV=m_view*M;
+  MVP=m_project*MV ;
 
   shader->setUniform("MVP",MVP);
   shader->setUniform("MV",MV);
@@ -346,11 +342,11 @@ void NGLScene::loadMatricesToNormalShader()
   ngl::Mat4 MV;
   ngl::Mat4 MVP;
 
-  MV= m_cam.getViewMatrix()*
+  MV= m_view*
       m_mouseGlobalTX*
       m_transform.getMatrix()
       ;
-  MVP=m_cam.getProjectionMatrix()*MV;
+  MVP=m_project*MV;
   shader->setUniform("MVP",MVP);
 
 }
@@ -395,6 +391,23 @@ void NGLScene::keyPressEvent(QKeyEvent *_event)
 {
   // this method is called every time the main window recives a key event.
   // we then switch on the key value and set the camera in the GLWindow
+  enum class Mode : bool {Enable,Disable};
+  auto setLight=[](const std::string &_name, Mode _mode)
+  {
+    auto shader = ngl::ShaderLib::instance();
+    if(_mode==Mode::Enable)
+    {
+      shader->setUniform(fmt::format("{0}.ambient",_name),ngl::Vec4(1.0f,1.0f,1.0f,1.0f));
+      shader->setUniform(fmt::format("{0}.diffuse",_name),ngl::Vec4(1.0f,1.0f,1.0f,1.0f));
+      shader->setUniform(fmt::format("{0}.specular",_name),ngl::Vec4(1.0f,1.0f,1.0f,1.0f));
+    }
+    else
+    {
+      shader->setUniform(fmt::format("{0}.ambient",_name),ngl::Vec4::zero());
+      shader->setUniform(fmt::format("{0}.diffuse",_name),ngl::Vec4::zero());
+      shader->setUniform(fmt::format("{0}.specular",_name),ngl::Vec4::zero());
+    }
+  };
   switch (_event->key())
   {
   // escape key to quite
@@ -403,12 +416,12 @@ void NGLScene::keyPressEvent(QKeyEvent *_event)
   case Qt::Key_W : glPolygonMode(GL_FRONT_AND_BACK,GL_LINE); break;
   // turn off wire frame
   case Qt::Key_S : glPolygonMode(GL_FRONT_AND_BACK,GL_FILL); break;
-  case Qt::Key_1 : m_key->enable(); m_key->loadToShader("light[0]"); break;
-  case Qt::Key_2 : m_key->disable(); m_key->loadToShader("light[0]"); break;
-  case Qt::Key_3 : m_fill->enable(); m_fill->loadToShader("light[1]"); break;
-  case Qt::Key_4 : m_fill->disable(); m_fill->loadToShader("light[1]"); break;
-  case Qt::Key_5 : m_back->enable(); m_back->loadToShader("light[2]"); break;
-  case Qt::Key_6 : m_back->disable(); m_back->loadToShader("light[2]"); break;
+  case Qt::Key_1 : setLight("light[0]",Mode::Enable); break;
+  case Qt::Key_2 : setLight("light[0]",Mode::Disable); break;
+  case Qt::Key_3 : setLight("light[1]",Mode::Enable); break;
+  case Qt::Key_4 : setLight("light[1]",Mode::Disable); break;
+  case Qt::Key_5 : setLight("light[2]",Mode::Enable); break;
+  case Qt::Key_6 : setLight("light[2]",Mode::Disable); break;
   case Qt::Key_T : m_showNormals^=true; break;
   case Qt::Key_Space :
         m_win.spinXFace=0;
