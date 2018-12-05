@@ -79,10 +79,10 @@ private:
     //----------------------------------------------------------------------------------------------------------------------
     struct Light
     {
-      ngl::Vec4 position;
-      ngl::Vec4 ambient={0.0f,0.0f,0.0f};
-      ngl::Vec4 diffuse={1.0f,1.0f,1.0f,1.0f};
-      ngl::Vec4 specular={0.8f,0.8f,0.8f};
+      ngl::Vec3 position;
+      ngl::Vec3 ambient={0.01f,0.01f,0.01f};
+      ngl::Vec3 diffuse={1.0f,1.0f,1.0f};
+      ngl::Vec3 specular={0.8f,0.8f,0.8f};
     };
 
     Light m_key;

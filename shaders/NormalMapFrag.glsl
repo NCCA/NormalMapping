@@ -1,68 +1,63 @@
 #version 330 core
-#pragma optionNV(unroll all)
-// this is set for the base colour texture (unit 0)
-uniform sampler2D tex;
+out vec4 Fragcolour;
+
+in VS_OUT {
+    vec3 fragPos;
+    vec2 uv;
+    vec3 tangentLightPos[3];
+    vec3 tangentViewPos[3];
+    vec3 tangentFragPos[3];
+} fs_in;
+
+uniform sampler2D diffuseMap;
 // this is set to the spec map (texture unit 1)
 uniform sampler2D spec;
 // normal map set a texture unit 2
 uniform sampler2D normalMap;
-// array of light vectors passed from vert shader
-in vec3 lightVec[3];
-// array of half vects from vert shader
-in vec3 halfVec[3];
-// uv values passed from vert shader
-in vec2 vertUV;
-// spec power passed from client program (or could use alpha of spec map if present)
-uniform float specPower;
 
-
-// @brief light structure
 struct Light
 {
-	vec4 position;
-	vec4 ambient;
-	vec4 diffuse;
-	vec4 specular;
+  vec3 position;
+  vec3 ambient;
+  vec3 diffuse;
+  vec3 specular;
 };
-
 uniform Light light[3];
-in vec3 lightDir;
-// out the blinn half vector
-in vec3 halfVector;
-in vec3 eyeVec;
 
-in vec3 vPosition;
 
-/// @brief our output fragment colour
-out vec4 fragColour;
-
-void main ()
+void main()
 {
-fragColour=vec4(0);
-// lookup normal from normal map, move from [0,1] to  [-1, 1] range, normalize
-vec3 normal=normalize( texture(normalMap, vertUV.st).xyz * 2.0 - 1.0);
-// we need to flip the z as this is done in zBrush
-normal.z = -normal.z;
-// default material values to be accumulated
-float lamberFactor;
-vec4 diffuseMaterial = texture(tex, vertUV.st);
-// compute specular lighting
-vec4 specularMaterial=texture(spec, vertUV.st)  ;
+  // lookup normal from normal map, move from [0,1] to  [-1, 1] range, normalize
+  vec3 normal=normalize( texture(normalMap, fs_in.uv).xyz * 2.0 - 1.0);
+  // we need to flip the z as this is done in zBrush
+  //normal.z = -normal.z;
 
-float shininess ;
+  // compute specular lighting
+  vec3 specularMaterial=texture(spec, fs_in.uv).rgb;
 
-
-for (int i=0; i<3; ++i)
-{
-	lamberFactor= max (dot (lightVec[i], normal), 0.0) ;
-	// so light is hitting use here calculate and accumulate values
-	if (lamberFactor > 0.0)
-	{
-		// get the phong / blinn values
-		shininess = pow (max (dot ( halfVec[i],normal), 0.0), specPower);
-		fragColour +=diffuseMaterial * light[i].diffuse * lamberFactor;
-		fragColour +=	specularMaterial * light[i].specular * shininess;
-	}
-}
-
+  // get diffuse colour
+  vec3 colour = texture(diffuseMap, fs_in.uv).rgb;
+  // ambient
+  vec3 ambient=vec3(0);
+  vec3 diffuse=vec3(0);
+  vec3 specular=vec3(0);
+  for(int i=0; i<3; ++i)
+  {
+    ambient += light[i].ambient * colour;
+    // diffuse
+    vec3 lightDir = normalize(fs_in.tangentLightPos[i] - fs_in.tangentFragPos[i]);
+    float LdotN = max(dot(lightDir, normal), 0.0);
+    diffuse+= LdotN * colour *light[i].diffuse;
+    // specular
+    if(LdotN >0)
+    {
+      vec3 viewDir = normalize(fs_in.tangentViewPos[i] - fs_in.tangentFragPos[i]);
+      vec3 reflectDir = reflect(-lightDir, normal);
+      vec3 halfwayDir = normalize(lightDir + viewDir);
+      float spec = pow(max(dot(normal, halfwayDir), 0.0), 5);
+      specular += specularMaterial * spec * light[0].specular;
+    }
+  }
+  Fragcolour = vec4(ambient + diffuse + specular, 1.0);
+  //Fragcolour.rgb=normal;
 }

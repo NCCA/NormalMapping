@@ -1,65 +1,50 @@
 #version 330 core
-#pragma optionNV(unroll all)
-// first attribute the vertex values from our VAO
-layout (location =0) in vec3 inVert;
-// second attribute the UV values from our VAO
-layout (location =1) in vec2 inUV;
-// third attribute the  normals values from our VAO
-layout (location =2) in vec3 inNormal;
-// forth attribute the Tangents values from our VAO
-layout (location =3) in vec3 inTangent;
-// fith attribute the binormal values from our VAO
-layout (location =4) in vec3 inBinormal;
+layout (location = 0) in vec3 inVert;
+layout (location = 1) in vec3 inNormal;
+layout (location = 2) in vec2 inUV;
+layout (location = 3) in vec3 inTangent;
+layout (location = 4) in vec3 inBiTangent;
+
+out VS_OUT {
+    vec3 fragPos;
+    vec2 uv;
+    vec3 tangentLightPos[3];
+    vec3 tangentViewPos[3];
+    vec3 tangentFragPos[3];
+} vs_out;
+
+
+uniform mat4 M;
+uniform mat4 MVP;
+uniform mat3 normalMatrix;
+uniform vec3 viewPos;
+
 
 struct Light
 {
-	vec4 position;
-	vec4 ambient;
-	vec4 diffuse;
-	vec4 specular;
+  vec3 position;
+  vec3 ambient;
+  vec3 diffuse;
+  vec3 specular;
 };
-
-// array of lights
 uniform Light light[3];
-// direction of the lights used for shading
-out vec3 lightDir;
 
-uniform mat4 MVP;
-uniform mat4 M;
-uniform mat4 MV;
-// we use this to pass the UV values to the frag shader
-out vec2 vertUV;
-// an array of light Vectors to be passed to the frag shader
-out vec3 lightVec[3];
-// an array of half (blinn) vectors to be passed to the frag shader
-out vec3 halfVec[3];
 
 void main()
 {
+    vs_out.fragPos = vec3(M * vec4(inVert, 1.0));
+    vs_out.uv = inUV;
+    vec3 T = normalize(normalMatrix * inTangent);
+    vec3 N = normalize(normalMatrix * inNormal);
+    T = normalize(T - dot(T, N) * N);
+    vec3 B = cross(N, T);
 
-	// calculate the vertex position
-	gl_Position = MVP*vec4(inVert, 1.0);
-	// pass the UV values to the frag shader
-	vertUV=inUV.st;
-
-
-	vec4 worldPosition = MV * vec4(inVert, 1.0);
-
-	// now fill the array of light pos and half vectors for the avaliable lights
-	for (int i=0; i<3; ++i)
-	{
-	vec3 lightDir = normalize(light[i].position.xyz - worldPosition.xyz);
-	// transform light and half angle vectors by tangent basis
-	// this is based on code from here
-	//http://www.ozone3d.net/tutorials/bump_mapping.php
-	// as our values are already normalized we don't need to here
-	lightVec[i].x = dot (lightDir, inTangent );
-	lightVec[i].y = dot (lightDir, inBinormal);
-	lightVec[i].z = dot (lightDir, inNormal);
-	vec3 halfVector = normalize(worldPosition.xyz + lightDir);
-	halfVec[i].x = dot (halfVector, inTangent);
-	halfVec[i].y = dot (halfVector, inBinormal);
-	halfVec[i].z = dot (halfVector, inNormal);
-	}
-
+    mat3 TBN = transpose(mat3(T, B, N));
+    for(int i=0; i<3; ++i)
+    {
+      vs_out.tangentLightPos[i] = (TBN * light[i].position);
+      vs_out.tangentViewPos[i]  = (TBN * viewPos);
+      vs_out.tangentFragPos[i]  = (TBN * vs_out.fragPos);
+    }
+    gl_Position = MVP * vec4(inVert, 1.0);
 }

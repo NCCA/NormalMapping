@@ -42,7 +42,7 @@ void NGLScene::initializeGL()
   // Now we will create a basic Camera from the graphics library
   // This is a static camera so it only needs to be set once
   // First create Values for the camera position
-  ngl::Vec3 from(0,0,1);
+  ngl::Vec3 from(0,0,2);
   ngl::Vec3 to(0,0,0);
   ngl::Vec3 up(0,1,0);
   // create our camera
@@ -73,12 +73,12 @@ void NGLScene::initializeGL()
 	(*shader)["TextureShader"]->use();
 	// set our samplers for each of the textures this will correspond to the
 	// multitexture id below
-	shader->setUniform("tex",0);
+  shader->setUniform("diffuseMap",0); // was tex
 	shader->setUniform("spec",1);
 	shader->setUniform("normalMap",2);
 	// specular power
   shader->setUniform("specPower",12.0f);
-
+  shader->setUniform("viewPos",from);
 	// build our VertexArrayObject from the mesh
 	loadModel();
 
@@ -104,19 +104,19 @@ void NGLScene::initializeGL()
   glEnable(GL_MULTISAMPLE);
 
   /// now setup a basic 3 point lighting system
-  m_key.position=ngl::Vec4(3,2,2);
+  m_key.position=ngl::Vec3(3,2,2);
   shader->setUniform("light[0].position",m_key.position);
   shader->setUniform("light[0].ambient",m_key.ambient);
   shader->setUniform("light[0].diffuse",m_key.diffuse);
   shader->setUniform("light[0].specular",m_key.specular);
 
-  m_fill.position=ngl::Vec4(-3.0f,1.5f,2.0f);
+  m_fill.position=ngl::Vec3(-3.0f,1.5f,2.0f);
   shader->setUniform("light[1].position",m_fill.position);
   shader->setUniform("light[1].ambient",m_fill.ambient);
   shader->setUniform("light[1].diffuse",m_fill.diffuse);
   shader->setUniform("light[1].specular",m_fill.specular);
 
-  m_back.position=ngl::Vec4(0.0f,1.0f,-2.0f);
+  m_back.position=ngl::Vec3(0.0f,5.0f,0.0f);
   shader->setUniform("light[2].position",m_back.position);
   shader->setUniform("light[2].ambient",m_back.ambient);
   shader->setUniform("light[2].diffuse",m_back.diffuse);
@@ -150,14 +150,14 @@ void NGLScene::initializeGL()
 // a simple structure to hold our vertex data
 struct vertData
 {
-	GLfloat u; // tex cords from obj
+  GLfloat x; // position from obj
+  GLfloat y;
+  GLfloat z;
+  GLfloat nx; // normal from obj mesh
+  GLfloat ny;
+  GLfloat nz;
+  GLfloat u; // tex cords from obj
 	GLfloat v; // tex cords
-	GLfloat nx; // normal from obj mesh
-	GLfloat ny;
-	GLfloat nz;
-	GLfloat x; // position from obj
-	GLfloat y;
-	GLfloat z;
 	GLfloat tx; // tangent calculated by us
 	GLfloat ty;
 	GLfloat tz;
@@ -283,29 +283,14 @@ void NGLScene::loadModel()
 	// how much (in bytes) data we are copying
 	// a pointer to the first element of data (in this case the address of the first element of the
 	// std::vector
-  m_vaoMesh->setData(ngl::AbstractVAO::VertexData(meshSize*sizeof(vertData),vboMesh[0].u));
-	// in this case we have packed our data in interleaved format as follows
-	// u,v,nx,ny,nz,x,y,z
-	// If you look at the shader we have the following attributes being used
-	// attribute vec3 inVert; attribute 0
-	// attribute vec2 inUV; attribute 1
-	// attribute vec3 inNormal; attribure 2
-	// so we need to set the vertexAttributePointer so the correct size and type as follows
-	// vertex is attribute 0 with x,y,z(3) parts of type GL_FLOAT, our complete packed data is
-	// sizeof(vertData) and the offset into the data structure for the first x component is 5 (u,v,nx,ny,nz)..x
-	m_vaoMesh->setVertexAttributePointer(0,3,GL_FLOAT,sizeof(vertData),5);
-	// uv same as above but starts at 0 and is attrib 1 and only u,v so 2
-	m_vaoMesh->setVertexAttributePointer(1,2,GL_FLOAT,sizeof(vertData),0);
-	// normal same as vertex only starts at position 2 (u,v)-> nx
-	m_vaoMesh->setVertexAttributePointer(2,3,GL_FLOAT,sizeof(vertData),2);
-
+  m_vaoMesh->setData(ngl::AbstractVAO::VertexData(meshSize*sizeof(vertData),vboMesh[0].x));
+  m_vaoMesh->setVertexAttributePointer(0,3,GL_FLOAT,sizeof(vertData),0);
+  m_vaoMesh->setVertexAttributePointer(1,3,GL_FLOAT,sizeof(vertData),3);
+  m_vaoMesh->setVertexAttributePointer(2,2,GL_FLOAT,sizeof(vertData),6);
 	// tangent same as vertex only starts at position 8 (u,v)-> nx
 	m_vaoMesh->setVertexAttributePointer(3,3,GL_FLOAT,sizeof(vertData),8);
-
 	// bi-tangent (or Binormal) same as vertex only starts at position 11 (u,v)-> nx
 	m_vaoMesh->setVertexAttributePointer(4,3,GL_FLOAT,sizeof(vertData),11);
-
-
 	// now we have set the vertex attributes we tell the VAO class how many indices to draw when
 	// glDrawArrays is called, in this case we use buffSize (but if we wished less of the sphere to be drawn we could
 	// specify less (in steps of 3))
@@ -324,13 +309,15 @@ void NGLScene::loadMatricesToShader()
   ngl::Mat4 MV;
   ngl::Mat4 MVP;
   ngl::Mat4 M;
-
   M=m_mouseGlobalTX*m_transform.getMatrix();
   MV=m_view*M;
   MVP=m_project*MV ;
-
+  ngl::Mat3 normalMatrix=M;
+  normalMatrix.inverse().transpose();
   shader->setUniform("MVP",MVP);
   shader->setUniform("MV",MV);
+  shader->setUniform("normalMatrix",normalMatrix);
+  shader->setUniform("M",M);
 
 }
 
@@ -397,15 +384,15 @@ void NGLScene::keyPressEvent(QKeyEvent *_event)
     auto shader = ngl::ShaderLib::instance();
     if(_mode==Mode::Enable)
     {
-      shader->setUniform(fmt::format("{0}.ambient",_name),ngl::Vec4(1.0f,1.0f,1.0f,1.0f));
-      shader->setUniform(fmt::format("{0}.diffuse",_name),ngl::Vec4(1.0f,1.0f,1.0f,1.0f));
-      shader->setUniform(fmt::format("{0}.specular",_name),ngl::Vec4(1.0f,1.0f,1.0f,1.0f));
+      shader->setUniform(fmt::format("{0}.ambient",_name),ngl::Vec3(0.01f,0.01f,0.01f));
+      shader->setUniform(fmt::format("{0}.diffuse",_name),ngl::Vec3(1.0f,1.0f,1.0f));
+      shader->setUniform(fmt::format("{0}.specular",_name),ngl::Vec3(1.0f,1.0f,1.0f));
     }
     else
     {
-      shader->setUniform(fmt::format("{0}.ambient",_name),ngl::Vec4::zero());
-      shader->setUniform(fmt::format("{0}.diffuse",_name),ngl::Vec4::zero());
-      shader->setUniform(fmt::format("{0}.specular",_name),ngl::Vec4::zero());
+      shader->setUniform(fmt::format("{0}.ambient",_name),ngl::Vec3::zero());
+      shader->setUniform(fmt::format("{0}.diffuse",_name),ngl::Vec3::zero());
+      shader->setUniform(fmt::format("{0}.specular",_name),ngl::Vec3::zero());
     }
   };
   switch (_event->key())
