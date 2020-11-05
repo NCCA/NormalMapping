@@ -32,7 +32,7 @@ void NGLScene::initializeGL()
 {
   // we must call this first before any other GL commands to load and link the
   // gl commands from the lib, if this is not done program will crash
-  ngl::NGLInit::instance();
+  ngl::NGLInit::initialize();
 
   glClearColor(0.4f, 0.4f, 0.4f, 1.0f);			   // Grey Background
   // enable depth testing for drawing
@@ -52,33 +52,31 @@ void NGLScene::initializeGL()
   m_project=ngl::perspective(45.0f,(float)width()/height(),0.05f,350.0f);
 
   // now to load the shader and set the values
-  // grab an instance of shader manager
-  auto *shader=ngl::ShaderLib::instance();
   // load a frag and vert shaders
 
-  shader->createShaderProgram("TextureShader");
+  ngl::ShaderLib::createShaderProgram("TextureShader");
 
-  shader->attachShader("SimpleVertex",ngl::ShaderType::VERTEX);
-  shader->attachShader("SimpleFragment",ngl::ShaderType::FRAGMENT);
-  shader->loadShaderSource("SimpleVertex","shaders/NormalMapVert.glsl");
-  shader->loadShaderSource("SimpleFragment","shaders/NormalMapFrag.glsl");
+  ngl::ShaderLib::attachShader("SimpleVertex",ngl::ShaderType::VERTEX);
+  ngl::ShaderLib::attachShader("SimpleFragment",ngl::ShaderType::FRAGMENT);
+  ngl::ShaderLib::loadShaderSource("SimpleVertex","shaders/NormalMapVert.glsl");
+  ngl::ShaderLib::loadShaderSource("SimpleFragment","shaders/NormalMapFrag.glsl");
 
-	shader->compileShader("SimpleVertex");
-	shader->compileShader("SimpleFragment");
-	shader->attachShaderToProgram("TextureShader","SimpleVertex");
-	shader->attachShaderToProgram("TextureShader","SimpleFragment");
+	ngl::ShaderLib::compileShader("SimpleVertex");
+	ngl::ShaderLib::compileShader("SimpleFragment");
+	ngl::ShaderLib::attachShaderToProgram("TextureShader","SimpleVertex");
+	ngl::ShaderLib::attachShaderToProgram("TextureShader","SimpleFragment");
 
 	// link the shader no attributes are bound
-	shader->linkProgramObject("TextureShader");
-	(*shader)["TextureShader"]->use();
+	ngl::ShaderLib::linkProgramObject("TextureShader");
+	ngl::ShaderLib::use("TextureShader");
 	// set our samplers for each of the textures this will correspond to the
 	// multitexture id below
-  shader->setUniform("diffuseMap",0); // was tex
-	shader->setUniform("spec",1);
-	shader->setUniform("normalMap",2);
+  ngl::ShaderLib::setUniform("diffuseMap",0); // was tex
+	ngl::ShaderLib::setUniform("spec",1);
+	ngl::ShaderLib::setUniform("normalMap",2);
 	// specular power
-  shader->setUniform("specPower",12.0f);
-  shader->setUniform("viewPos",from);
+  ngl::ShaderLib::setUniform("specPower",12.0f);
+  ngl::ShaderLib::setUniform("viewPos",from);
 	// build our VertexArrayObject from the mesh
 	loadModel();
 
@@ -105,45 +103,45 @@ void NGLScene::initializeGL()
 
   /// now setup a basic 3 point lighting system
   m_key.position=ngl::Vec3(3,2,2);
-  shader->setUniform("light[0].position",m_key.position);
-  shader->setUniform("light[0].ambient",m_key.ambient);
-  shader->setUniform("light[0].diffuse",m_key.diffuse);
-  shader->setUniform("light[0].specular",m_key.specular);
+  ngl::ShaderLib::setUniform("light[0].position",m_key.position);
+  ngl::ShaderLib::setUniform("light[0].ambient",m_key.ambient);
+  ngl::ShaderLib::setUniform("light[0].diffuse",m_key.diffuse);
+  ngl::ShaderLib::setUniform("light[0].specular",m_key.specular);
 
   m_fill.position=ngl::Vec3(-3.0f,1.5f,2.0f);
-  shader->setUniform("light[1].position",m_fill.position);
-  shader->setUniform("light[1].ambient",m_fill.ambient);
-  shader->setUniform("light[1].diffuse",m_fill.diffuse);
-  shader->setUniform("light[1].specular",m_fill.specular);
+  ngl::ShaderLib::setUniform("light[1].position",m_fill.position);
+  ngl::ShaderLib::setUniform("light[1].ambient",m_fill.ambient);
+  ngl::ShaderLib::setUniform("light[1].diffuse",m_fill.diffuse);
+  ngl::ShaderLib::setUniform("light[1].specular",m_fill.specular);
 
   m_back.position=ngl::Vec3(0.0f,5.0f,0.0f);
-  shader->setUniform("light[2].position",m_back.position);
-  shader->setUniform("light[2].ambient",m_back.ambient);
-  shader->setUniform("light[2].diffuse",m_back.diffuse);
-  shader->setUniform("light[2].specular",m_back.specular);
+  ngl::ShaderLib::setUniform("light[2].position",m_back.position);
+  ngl::ShaderLib::setUniform("light[2].ambient",m_back.ambient);
+  ngl::ShaderLib::setUniform("light[2].diffuse",m_back.diffuse);
+  ngl::ShaderLib::setUniform("light[2].specular",m_back.specular);
 
-  shader->createShaderProgram("normalShader");
+  ngl::ShaderLib::createShaderProgram("normalShader");
 
-  shader->attachShader("normalVertex",ngl::ShaderType::VERTEX);
-  shader->attachShader("normalFragment",ngl::ShaderType::FRAGMENT);
-  shader->loadShaderSource("normalVertex","shaders/normalVertex.glsl");
-  shader->loadShaderSource("normalFragment","shaders/normalFragment.glsl");
+  ngl::ShaderLib::attachShader("normalVertex",ngl::ShaderType::VERTEX);
+  ngl::ShaderLib::attachShader("normalFragment",ngl::ShaderType::FRAGMENT);
+  ngl::ShaderLib::loadShaderSource("normalVertex","shaders/normalVertex.glsl");
+  ngl::ShaderLib::loadShaderSource("normalFragment","shaders/normalFragment.glsl");
 
-  shader->compileShader("normalVertex");
-  shader->compileShader("normalFragment");
-  shader->attachShaderToProgram("normalShader","normalVertex");
-  shader->attachShaderToProgram("normalShader","normalFragment");
+  ngl::ShaderLib::compileShader("normalVertex");
+  ngl::ShaderLib::compileShader("normalFragment");
+  ngl::ShaderLib::attachShaderToProgram("normalShader","normalVertex");
+  ngl::ShaderLib::attachShaderToProgram("normalShader","normalFragment");
 
-  shader->attachShader("normalGeo",ngl::ShaderType::GEOMETRY);
-  shader->loadShaderSource("normalGeo","shaders/normalGeo.glsl");
-  shader->compileShader("normalGeo");
-  shader->attachShaderToProgram("normalShader","normalGeo");
+  ngl::ShaderLib::attachShader("normalGeo",ngl::ShaderType::GEOMETRY);
+  ngl::ShaderLib::loadShaderSource("normalGeo","shaders/normalGeo.glsl");
+  ngl::ShaderLib::compileShader("normalGeo");
+  ngl::ShaderLib::attachShaderToProgram("normalShader","normalGeo");
 
 
-  shader->linkProgramObject("normalShader");
-  shader->use("normalShader");
+  ngl::ShaderLib::linkProgramObject("normalShader");
+  ngl::ShaderLib::use("normalShader");
   // now pass the modelView and projection values to the shader
-  shader->setUniform("normalSize",0.01f);
+  ngl::ShaderLib::setUniform("normalSize",0.01f);
 }
 
 
@@ -304,8 +302,7 @@ void NGLScene::loadModel()
 
 void NGLScene::loadMatricesToShader()
 {
-  ngl::ShaderLib *shader=ngl::ShaderLib::instance();
-  (*shader)["TextureShader"]->use();
+  ngl::ShaderLib::use("TextureShader");
   ngl::Mat4 MV;
   ngl::Mat4 MVP;
   ngl::Mat4 M;
@@ -314,18 +311,17 @@ void NGLScene::loadMatricesToShader()
   MVP=m_project*MV ;
   ngl::Mat3 normalMatrix=M;
   normalMatrix.inverse().transpose();
-  shader->setUniform("MVP",MVP);
-  shader->setUniform("MV",MV);
-  shader->setUniform("normalMatrix",normalMatrix);
-  shader->setUniform("M",M);
+  ngl::ShaderLib::setUniform("MVP",MVP);
+  ngl::ShaderLib::setUniform("MV",MV);
+  ngl::ShaderLib::setUniform("normalMatrix",normalMatrix);
+  ngl::ShaderLib::setUniform("M",M);
 
 }
 
 
 void NGLScene::loadMatricesToNormalShader()
 {
-  ngl::ShaderLib *shader=ngl::ShaderLib::instance();
-  (*shader)["normalShader"]->use();
+  ngl::ShaderLib::use("normalShader");
   ngl::Mat4 MV;
   ngl::Mat4 MVP;
 
@@ -334,7 +330,7 @@ void NGLScene::loadMatricesToNormalShader()
       m_transform.getMatrix()
       ;
   MVP=m_project*MV;
-  shader->setUniform("MVP",MVP);
+  ngl::ShaderLib::setUniform("MVP",MVP);
 
 }
 
@@ -381,25 +377,24 @@ void NGLScene::keyPressEvent(QKeyEvent *_event)
   enum class Mode : bool {Enable,Disable};
   auto setLight=[](const std::string &_name, Mode _mode)
   {
-    auto shader = ngl::ShaderLib::instance();
     if(_mode==Mode::Enable)
     {
-      shader->setUniform(fmt::format("{0}.ambient",_name),ngl::Vec3(0.01f,0.01f,0.01f));
-      shader->setUniform(fmt::format("{0}.diffuse",_name),ngl::Vec3(1.0f,1.0f,1.0f));
-      shader->setUniform(fmt::format("{0}.specular",_name),ngl::Vec3(1.0f,1.0f,1.0f));
+      ngl::ShaderLib::setUniform(fmt::format("{0}.ambient",_name),ngl::Vec3(0.01f,0.01f,0.01f));
+      ngl::ShaderLib::setUniform(fmt::format("{0}.diffuse",_name),ngl::Vec3(1.0f,1.0f,1.0f));
+      ngl::ShaderLib::setUniform(fmt::format("{0}.specular",_name),ngl::Vec3(1.0f,1.0f,1.0f));
     }
     else
     {
-      shader->setUniform(fmt::format("{0}.ambient",_name),ngl::Vec3::zero());
-      shader->setUniform(fmt::format("{0}.diffuse",_name),ngl::Vec3::zero());
-      shader->setUniform(fmt::format("{0}.specular",_name),ngl::Vec3::zero());
+      ngl::ShaderLib::setUniform(fmt::format("{0}.ambient",_name),ngl::Vec3::zero());
+      ngl::ShaderLib::setUniform(fmt::format("{0}.diffuse",_name),ngl::Vec3::zero());
+      ngl::ShaderLib::setUniform(fmt::format("{0}.specular",_name),ngl::Vec3::zero());
     }
   };
   switch (_event->key())
   {
   // escape key to quite
   case Qt::Key_Escape : QGuiApplication::exit(EXIT_SUCCESS); break;
-  // turn on wirframe rendering
+  // turn on wireframe rendering
   case Qt::Key_W : glPolygonMode(GL_FRONT_AND_BACK,GL_LINE); break;
   // turn off wire frame
   case Qt::Key_S : glPolygonMode(GL_FRONT_AND_BACK,GL_FILL); break;
