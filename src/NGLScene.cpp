@@ -74,8 +74,6 @@ void NGLScene::initializeGL()
   ngl::ShaderLib::setUniform("diffuseMap",0); // was tex
 	ngl::ShaderLib::setUniform("spec",1);
 	ngl::ShaderLib::setUniform("normalMap",2);
-	// specular power
-  ngl::ShaderLib::setUniform("specPower",12.0f);
   ngl::ShaderLib::setUniform("viewPos",from);
 	// build our VertexArrayObject from the mesh
 	loadModel();
@@ -312,7 +310,6 @@ void NGLScene::loadMatricesToShader()
   ngl::Mat3 normalMatrix=M;
   normalMatrix.inverse().transpose();
   ngl::ShaderLib::setUniform("MVP",MVP);
-  ngl::ShaderLib::setUniform("MV",MV);
   ngl::ShaderLib::setUniform("normalMatrix",normalMatrix);
   ngl::ShaderLib::setUniform("M",M);
 
