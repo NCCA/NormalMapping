@@ -1,4 +1,4 @@
-#version 330 core
+#version 420 core
 out vec4 Fragcolour;
 
 in VS_OUT {
@@ -9,11 +9,11 @@ in VS_OUT {
     vec3 tangentFragPos[3];
 } fs_in;
 
-uniform sampler2D diffuseMap;
+layout(binding=0) uniform sampler2D diffuseMap;
 // this is set to the spec map (texture unit 1)
-uniform sampler2D spec;
+layout(binding=1) uniform sampler2D spec;
 // normal map set a texture unit 2
-uniform sampler2D normalMap;
+layout(binding=2) uniform sampler2D normalMap;
 
 struct Light
 {
@@ -30,10 +30,10 @@ void main()
   // lookup normal from normal map, move from [0,1] to  [-1, 1] range, normalize
   vec3 normal=normalize( texture(normalMap, fs_in.uv).xyz * 2.0 - 1.0);
   // we need to flip the z as this is done in zBrush
-  //normal.z = -normal.z;
+  normal.z = -normal.z;
 
   // compute specular lighting
-  vec3 specularMaterial=texture(spec, fs_in.uv).rgb;
+  vec3 specularMaterial=vec3(0.01);//texture(spec, fs_in.uv).rgb;
 
   // get diffuse colour
   vec3 colour = texture(diffuseMap, fs_in.uv).rgb;
@@ -54,7 +54,7 @@ void main()
       vec3 viewDir = normalize(fs_in.tangentViewPos[i] - fs_in.tangentFragPos[i]);
       vec3 reflectDir = reflect(-lightDir, normal);
       vec3 halfwayDir = normalize(lightDir + viewDir);
-      float spec = pow(max(dot(normal, halfwayDir), 0.0), 5);
+      float spec = pow(max(dot(normal, halfwayDir), 0.0), 500);
       specular += specularMaterial * spec * light[0].specular;
     }
   }

@@ -71,9 +71,9 @@ void NGLScene::initializeGL()
 	ngl::ShaderLib::use("TextureShader");
 	// set our samplers for each of the textures this will correspond to the
 	// multitexture id below
-  ngl::ShaderLib::setUniform("diffuseMap",0); // was tex
-	ngl::ShaderLib::setUniform("spec",1);
-	ngl::ShaderLib::setUniform("normalMap",2);
+  //ngl::ShaderLib::setUniform("diffuseMap",0); // was tex
+	//ngl::ShaderLib::setUniform("spec",1);
+	//ngl::ShaderLib::setUniform("normalMap",2);
   ngl::ShaderLib::setUniform("viewPos",from);
 	// build our VertexArrayObject from the mesh
 	loadModel();
