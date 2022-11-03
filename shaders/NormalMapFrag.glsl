@@ -9,11 +9,18 @@ in VS_OUT {
     vec3 tangentFragPos[3];
 } fs_in;
 
-layout(binding=0) uniform sampler2D diffuseMap;
+//layout(binding=0) uniform sampler2D diffuseMap;
 // this is set to the spec map (texture unit 1)
-layout(binding=1) uniform sampler2D spec;
+//layout(binding=1) uniform sampler2D spec;
 // normal map set a texture unit 2
-layout(binding=2) uniform sampler2D normalMap;
+//layout(binding=2) uniform sampler2D normalMap;
+
+uniform sampler2D diffuseMap;
+// this is set to the spec map (texture unit 1)
+uniform sampler2D spec;
+// normal map set a texture unit 2
+uniform sampler2D normalMap;
+
 
 struct Light
 {
