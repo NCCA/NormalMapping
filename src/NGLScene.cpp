@@ -7,7 +7,7 @@
 #include <ngl/ShaderLib.h>
 #include <ngl/Texture.h>
 #include <ngl/Obj.h>
-
+#include <iostream>
 NGLScene::NGLScene()
 {
   setTitle("Normal mapping Demo");
